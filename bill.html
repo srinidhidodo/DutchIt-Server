@@ -1,0 +1,108 @@
+<html>
+<head>
+<style>
+	body{text-align:center}
+</style>
+<script>
+	var tnum,pid;
+	
+	function initvals()
+	{
+		
+		if (typeof DI!=='undefined')
+		{
+			tnum=DI.getTId();
+			pid=DI.getPId();
+			//document.getElementById("testing").innerHTML="Table num: "+tnum+"<br />Patron ID: "+pid;
+		}
+		else
+		{
+			tnum=1;
+			pid=2;
+		}
+		url="order2.php?tnum="+tnum+"&pid="+pid;
+		//console.log(urls);
+	}
+	
+	function loadmenu()
+	{
+		if(xhr1.readyState==4 && xhr1.status==200)
+		{
+			var temp=JSON.parse(xhr1.responseText);
+			var parent=document.getElementById("orderdetails");
+			parent.style.border="1px solid lightgray";
+			var l1=temp['pids'];
+			if (!(pid in l1))
+			{
+				var p2=document.createElement("p");
+				p2.innerHTML="<b> Your Bill (Patron "+pid+")</b><br />You have no orders";
+				parent.appendChild(p2);
+			}
+			else
+			{
+				var p2=document.createElement("p");
+				p2.innerHTML="<b> Your Bill (Patron "+pid+")</b><br />";
+				var p=document.createElement("span");
+				//console.log(pid);
+				p.innerHTML="<br />Total price = "+l1[pid]['total']+"<br /><br /><b>Item Name  -  Quantity  -  Price per item - Price - No of people sharing</b>";
+				var l2=l1[pid]['items'];
+				var list=document.createElement("ul");
+				list.style.listStyle="none";
+				for (j in l2)
+				{
+					var litem=document.createElement("li");
+					list.appendChild(litem);
+					//var sp=document.createElement("span");
+					//litem.appendChild(sp);
+					litem.innerHTML=l2[j]['itemname']+" - "+l2[j]['qty']+" - "+l2[j]['pricePerItem']+" - "+l2[j]['price']+" - "+l2[j]['shared'];
+				}
+				p.appendChild(list);
+				p2.appendChild(p);
+				parent.appendChild(p2);
+			}
+			//////////////
+			parent.appendChild(document.createElement("hr"));
+			parent.appendChild(document.createElement("hr"));
+				
+			var p1=document.createElement("p");
+			p1.innerHTML="<b>Total bill = "+temp['billamt']+"</b><br />";
+			parent.appendChild(p1);
+			for (i in l1)
+			{
+				p=document.createElement("span");
+				p.innerHTML="<b>Patron "+i+"</b><br />Total price = "+l1[i]['total']+"<br /><br /><b>Item Name  -  Quantity  -  Price per item - Price - No of people sharing</b>";
+				var l2=l1[i]['items'];
+				var list=document.createElement("ul");
+				list.style.listStyle="none";
+				for (j in l2)
+				{
+					var litem=document.createElement("li");
+					list.appendChild(litem);
+					//var sp=document.createElement("span");
+					//litem.appendChild(sp);
+					litem.innerHTML=l2[j]['itemname']+" - "+l2[j]['qty']+" - "+l2[j]['pricePerItem']+" - "+l2[j]['price']+" - "+l2[j]['shared'];
+				}
+				p.appendChild(list);
+				parent.appendChild(p);
+				parent.appendChild(document.createElement("hr"));
+			}
+		}
+	}
+
+	function load()
+	{
+		initvals();
+		var url1="generatebill2.php?tnum="+tnum;
+		//alert(url1);
+		xhr1=new XMLHttpRequest();
+		xhr1.onreadystatechange=loadmenu;
+		xhr1.open("GET",url1,true);
+		xhr1.send();
+	}
+	
+</script>
+</head>
+<body onload="load()">
+	<div id="orderdetails"> </div>
+</body>
+</html>

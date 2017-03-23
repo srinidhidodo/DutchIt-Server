@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style type="text/css">
+	body{text-align:center}
+</style>
+<script>
+	//console.log(di.patron_id);
+	//alert('1');
+	//var tnum=1;
+	//var pid=2;
+	var tnum;
+	var pid;
+	var url;
+	
+	function initvals()
+	{
+		
+		if (typeof DI!=='undefined')
+		{
+			tnum=DI.getTId();
+			pid=DI.getPId();
+			document.getElementById("testing").innerHTML="Table num: "+tnum+"<br />Patron ID: "+pid;
+		}
+		else
+		{
+			tnum=1;
+			pid=2;
+		}
+		url="order2.php?tnum="+tnum+"&pid="+pid;
+		//console.log(urls);
+	}
+	
+	function placeorder()
+	{
+		var a=document.getElementsByTagName("input");
+		//console.log(a);
+		var cid=0; //count id
+		for (i=0;i<a.length;i++)
+		{
+			//console.log(a[i]);
+			if (a[i].type=="number" && a[i].value>0 && !a[i].hidden)
+			{
+				cid+=1;
+				url+="&"+a[i].id+"="+a[i].value;
+				if (document.getElementById("ifshare"+cid).value==1 && document.getElementById("share"+cid).value!="")
+				{
+					var s=document.getElementById("share"+cid).value;
+					alert(s);
+					url+=","+s;
+				}
+			}
+		}
+		console.log(url);
+		xhr=new XMLHttpRequest();
+		xhr.onreadystatechange=showMessage;
+		xhr.open("GET",url,true);
+		xhr.send();
+	}
+	
+	function showMessage()
+	{
+		if(xhr.readyState==4 && xhr.status==200)
+			console.log("Done");
+	}
+
+	function vieworders()
+	{
+		var url1="generatebill2.php?tnum="+tnum;
+		//alert(url1);
+		xhr1=new XMLHttpRequest();
+		xhr1.onreadystatechange=showOrder;
+		xhr1.open("GET",url1,true);
+		xhr1.send();
+	}
+	
+	function showOrder()
+	{
+		if(xhr1.readyState==4 && xhr1.status==200)
+		{
+			var temp=JSON.parse(xhr1.responseText);
+			//console.log(temp);
+			var parent=document.getElementById("orderdetails");
+			//parent.style.width="80%";
+			parent.style.border="1px solid lightgray";
+			var l1=temp['pids'];
+			if (!(pid in l1))
+			{
+				var p2=document.createElement("p");
+				p2.innerHTML="<b> Your Bill (Patron "+pid+")</b><br />You have no orders";
+				parent.appendChild(p2);
+			}
+			else
+			{
+				var p2=document.createElement("p");
+				p2.innerHTML="<b> Your Bill (Patron "+pid+")</b><br />";
+				var p=document.createElement("span");
+				//console.log(pid);
+				p.innerHTML="<br />Total price = "+l1[pid]['total']+"<br /><br /><b>Item Name  -  Quantity  -  Price per item - Price - No of people sharing</b>";
+				var l2=l1[pid]['items'];
+				var list=document.createElement("ul");
+				list.style.listStyle="none";
+				for (j in l2)
+				{
+					var litem=document.createElement("li");
+					list.appendChild(litem);
+					//var sp=document.createElement("span");
+					//litem.appendChild(sp);
+					litem.innerHTML=l2[j]['itemname']+" - "+l2[j]['qty']+" - "+l2[j]['pricePerItem']+" - "+l2[j]['price']+" - "+l2[j]['shared'];
+				}
+				p.appendChild(list);
+				p2.appendChild(p);
+				parent.appendChild(p2);
+			}
+			//////////////
+			parent.appendChild(document.createElement("hr"));
+			parent.appendChild(document.createElement("hr"));
+				
+			var p1=document.createElement("p");
+			p1.innerHTML="<b>Total bill = "+temp['billamt']+"</b><br />";
+			parent.appendChild(p1);
+			for (i in l1)
+			{
+				p=document.createElement("span");
+				p.innerHTML="<b>Patron "+i+"</b><br />Total price = "+l1[i]['total']+"<br /><br /><b>Item Name  -  Quantity  -  Price per item - Price - No of people sharing</b>";
+				var l2=l1[i]['items'];
+				var list=document.createElement("ul");
+				list.style.listStyle="none";
+				for (j in l2)
+				{
+					var litem=document.createElement("li");
+					list.appendChild(litem);
+					//var sp=document.createElement("span");
+					//litem.appendChild(sp);
+					litem.innerHTML=l2[j]['itemname']+" - "+l2[j]['qty']+" - "+l2[j]['pricePerItem']+" - "+l2[j]['price']+" - "+l2[j]['shared'];
+				}
+				p.appendChild(list);
+				parent.appendChild(p);
+				parent.appendChild(document.createElement("hr"));
+			}
+		}
+	}
+	
+	function clearordersdiv()
+	{
+		document.getElementById("orderdetails").innerHTML="";
+		document.getElementById("orderdetails").style="";
+	}
+	
+	function genbill()
+	{
+		if (typeof DI!=='undefined')
+			DI.genBill();
+		else
+		{
+			clearordersdiv();
+			vieworders();
+		}
+	}
+	
+	function share(divnum)
+	{
+		var ifshareid="ifshare"+divnum;
+		document.getElementById(ifshareid).value=1;
+		var divid="div"+divnum;
+		var div=document.getElementById(divid);
+		div.style.backgroundColor="lightgray";
+		div.style.padding="5px";
+		div.style.margin="5px";
+		var ip=document.createElement("input");
+		ip.id="share"+divnum;
+		ip.type="text";
+		//var p=document.createElement("p");
+		div.innerHTML="Enter IDs of patrons with whom you wish to share(comma separated), for example: 1,2";
+		div.appendChild(document.createElement("br"));
+		div.appendChild(ip);
+	}
+	
+</script>
+</head>
+<body onload="initvals()">
+	<div id="testing"> </div>
+	<h1> Menu </h1>
+	<form method="GET" id="form1" action="order.php">
+		<p>
+			Cream of mushroom soup - 130 <input type="number" id="item1" name="item1" placeholder="Quantity" />
+			<input type="button" value="Share" onclick="share(1)" />
+			<input type="number" id="ifshare1" value="0" hidden />
+			<div id="div1"></div>
+		</p>
+		<p>
+			Pasta Salad - 130 <input type="number" id="item2" name="item2" placeholder="Quantity" />
+			<input type="button" value="Share" onclick="share(2)" />
+			<input type="number" id="ifshare2" value="0" hidden />
+			<div id="div2"></div>
+		</p>
+		<p>
+			Caesar Salad - 150 <input type="number" id="item3" name="item3" placeholder="Quantity" />
+			<input type="button" value="Share" onclick="share(3)" />
+			<input type="number" id="ifshare3" value="0" hidden />
+			<div id="div3"></div>
+		</p>
+		<p>
+			Mexican Nachos - 175 <input type="number" id="item4"  name="item4" placeholder="Quantity" />
+			<input type="button" value="Share" onclick="share(4)" />
+			<input type="number" id="ifshare4" value="0" hidden />
+			<div id="div4"></div>
+		</p>
+		<p>
+			Chicken and Cheese Poppers - 200 <input type="number" id="item5" name="item5" placeholder="Quantity" />
+			<input type="button" value="Share" onclick="share(5)" />
+			<input type="number" id="ifshare5" value="0" hidden />
+			<div id="div5"></div>
+		</p>
+		<p>
+			Fish Fingers - 220 <input type="number" id="item6"  name="item6" placeholder="Quantity" />
+			<input type="button" value="Share" onclick="share(6)" />
+			<input type="number" id="ifshare6" value="0" hidden />
+			<div id="div6"></div>
+		</p>
+		<p>
+			Vegetable Sizzlers - 200 <input type="number" id="item7" name="item7" placeholder="Quantity" />
+			<input type="button" value="Share" onclick="share(7)" />
+			<input type="number" id="ifshare7" value="0" hidden />
+			<div id="div7"></div>
+		</p>
+		<p>
+			<input type="button" id="orderbutton" value="Place Order" onclick="placeorder()" />
+		</p>
+		<p>
+			<input type="button" id="viewbutton" value="View Orders" onmousedown="vieworders()" onmouseup="clearordersdiv()" />
+			<div id="orderdetails"> </div>
+		</p>
+		<p>
+			<input type="button" id="billbutton" value="Generate Bill" onclick="genbill()" />
+		</p>
+	</form>
+	
+	
+	
+</body>
+</html>
